@@ -25,8 +25,8 @@ def create_tab(conn):
         phone_number INTEGER
         );
         """)
-
-    conn.commit()
+        conn.commit()
+        print('таблицы созданы')
     return
 
 
@@ -37,8 +37,9 @@ def add_client(conn, name, last_name, email, phone_number=None):
         VALUES (%s, %s, %s)
         RETURNING id, name, last_name, email;
         """, (name, last_name, email))
-
-        conn.commit()
+        print('клиент добавлен')
+        print(cur.fetchone())
+    return
 
 
 def add_phone(conn, id, phone_number):
@@ -48,6 +49,8 @@ def add_phone(conn, id, phone_number):
         VALUES (%s, %s)
         RETURNING id, phone_number;
         """, (id, phone_number))
+        print('телефон добавлен')
+        print(cur.fetchone())
     return
 
 
@@ -58,11 +61,14 @@ def change_client(conn, id, name=None, last_name=None, email=None, phone_number=
         WHERE id=%s
         RETURNING id, name, last_name, email;
         """, (name, last_name, email, id))
+        print(cur.fetchone())
 
         cur.execute("""
         UPDATE phones SET phone_number=%s
         RETURNING id, phone_number;
         """, (phone_number,))
+        print('клиент изменён')
+        print(cur.fetchone())
 
     return
 
@@ -71,9 +77,10 @@ def delete_phone(conn, id, phone_number):
     with conn.cursor() as cur:
         cur.execute("""
         DELETE FROM phones
-        WHERE id=%s AND phone_number=%s
-        RETURNING id;
+        WHERE id=%s AND phone_number=%s;
         """, (id,))
+        conn.commit()
+        print('телефон удалён')
     return
 
 
@@ -83,7 +90,9 @@ def delete_client(conn, id):
         DELETE FROM client
         WHERE id=%s;
         """, (id,))
-    conn.commit()
+        conn.commit()
+        print('телефон удалён')
+
     return
 
 
@@ -97,7 +106,7 @@ def find_client(conn, name=None, last_name=None, email=None, phone_number=None):
         AND (email = %(email)s OR %(email)s IS NULL)
         AND (phone_number = %(phone)s OR %(phone)s IS NULL);
         """, {'name': name, 'last_name': last_name, 'email': email, 'phone': phone_number})
-        
+        print(cur.fetchone())
     return
 
 
@@ -111,3 +120,4 @@ with psycopg2.connect(database='database4', user='postgres', password='Python202
     find_client(conn, 'Petr', 'Petrov', 'ppetrov@gmail.com', 881288888)
 
 conn.close()
+
