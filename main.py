@@ -78,7 +78,7 @@ def delete_phone(conn, id, phone_number):
         cur.execute("""
         DELETE FROM phones
         WHERE id=%s AND phone_number=%s;
-        """, (id,))
+        """, (id,phone_number))
         conn.commit()
         print('телефон удалён')
     return
@@ -91,7 +91,7 @@ def delete_client(conn, id):
         WHERE id=%s;
         """, (id,))
         conn.commit()
-        print('телефон удалён')
+        print('клиент удалён')
 
     return
 
@@ -117,7 +117,7 @@ with psycopg2.connect(database='database4', user='postgres', password='Python202
     change_client(conn, 1, 'Petr', 'Petrov', 'ppetrov@)gmail.com', 781288888)
     delete_phone(conn, 1, 781288888)
     delete_client(conn, 1)
-    find_client(conn, 'Petr', 'Petrov', 'ppetrov@gmail.com', 881288888)
+    find_client(conn, 'Petr', 'Petrov', 'ppetrov@gmail.com', 781288888)
 
 conn.close()
 
