@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2.sql import SQL, Identifier
 
 
 def create_tab(conn):
@@ -30,7 +31,7 @@ def create_tab(conn):
     return
 
 
-def add_client(conn, name, last_name, email, phone_number=None):
+def add_client(conn, name, last_name, email):
     with conn.cursor() as cur:
         cur.execute("""
         INSERT INTO client (name, last_name, email)
@@ -54,37 +55,52 @@ def add_phone(conn, id, phone_number):
     return
 
 
-def change_client(conn, id, name=None, last_name=None, email=None, phone_number=None):
+def change_client(conn, client_id, name=None, last_name=None, email=None, phone_number=None):
+
     with conn.cursor() as cur:
-        cur.execute("""
-        UPDATE client SET name=%s, last_name=%s, email=%s
-        WHERE id=%s
-        RETURNING id, name, last_name, email;
-        """, (name, last_name, email, id))
-        print(cur.fetchone())
+        phone = {'phone_number': phone_number}
+        for arg in phone:
+            if arg:
+                conn.execute(SQL("UPDATE phones SET {}=%s WHERE client_id=%s;"))
+        conn.execute("""
+                SELECT * FROM phones
+                WHERE client_id=%s;
+                """, (client_id,))
+        cur.fetchone()
 
-        cur.execute("""
-        UPDATE phones SET phone_number=%s
-        RETURNING id, phone_number;
-        """, (phone_number,))
-        print('клиент изменён')
-        print(cur.fetchone())
-
-    return
+    with conn.cursor() as cur:
+        arg_list = {'name': name, "last_name": last_name, 'email': email}
+        for key, arg in arg_list.items():
+            if arg:
+                conn.execute(SQL("UPDATE client SET {}=%s WHERE id=%s;").format(Identifier(key)), (arg, id))
+        conn.execute("""
+                SELECT * FROM Client
+                WHERE id=%s;
+                """, (id,))
+        return cur.fetchall()
 
 
 def delete_phone(conn, id, phone_number):
+
     with conn.cursor() as cur:
         cur.execute("""
         DELETE FROM phones
         WHERE id=%s AND phone_number=%s;
-        """, (id,phone_number))
+        """, (id, phone_number))
         conn.commit()
         print('телефон удалён')
     return
 
 
 def delete_client(conn, id):
+
+    with conn.cursor() as cur:
+        cur.execute("""
+        DELETE FROM phones
+        WHERE id = %s and client_id = id;
+        """, (id,))
+        conn.commit()
+
     with conn.cursor() as cur:
         cur.execute("""
         DELETE FROM client
@@ -110,14 +126,16 @@ def find_client(conn, name=None, last_name=None, email=None, phone_number=None):
     return
 
 
-with psycopg2.connect(database='database4', user='postgres', password='Python2023') as conn:
-    create_tab(conn)
-    add_client(conn, 'ivan', 'ivanov', 'iivanov@)gmail.com')
-    add_phone(conn, 1, 781299999)
-    change_client(conn, 1, 'Petr', 'Petrov', 'ppetrov@)gmail.com', 781288888)
-    delete_phone(conn, 1, 781288888)
-    delete_client(conn, 1)
-    find_client(conn, 'Petr', 'Petrov', 'ppetrov@gmail.com', 781288888)
+if __name__ == '__main__':
+
+    with psycopg2.connect(database='database4', user='postgres', password='Python2023') as conn:
+        create_tab(conn)
+        add_client(conn, 'ivan', 'ivanov', 'iivanov@)gmail.com')
+        add_phone(conn, 1, 781299999)
+        change_client(conn, 1, 'Petr', None, 'ppetrov@)gmail.com', 781288888)
+        delete_phone(conn, 1, 781288888)
+        delete_client(conn, 1)
+        find_client(conn, 'Petr', 'Petrov', 'ppetrov@gmail.com', 781288888)
 
 conn.close()
 
